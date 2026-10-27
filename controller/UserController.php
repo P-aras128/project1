@@ -215,5 +215,77 @@ function deleteUserController($conn, $id) {
         "message" => "User deleted successfully"
     ]);
 }  
+
+function insertUserController($conn) {
+    header("Content-Type: application/json");
+
+    $input = json_decode(file_get_contents("php://input"), true);
+
+    if (
+        !is_array($input) ||
+        !isset(
+            $input["id"],
+            $input["username"],
+            $input["firstname"],
+            $input["email"],
+            $input["name"]
+        )
+    ) {
+        http_response_code(400);
+        echo json_encode([
+            "success" => false,
+            "message" => "All user fields are required"
+        ]);
+        return;
+    }
+
+    $id = filter_var($input["id"], FILTER_VALIDATE_INT);
+    $username = trim($input["username"]);
+    $firstname = trim($input["firstname"]);
+    $email = trim($input["email"]);
+    $name = trim($input["name"]);
+
+    if (
+        $id === false || $id < 1 ||
+        $username === "" ||
+        $firstname === "" ||
+        $email === "" ||
+        $name === "" ||
+        !filter_var($email, FILTER_VALIDATE_EMAIL)
+    ) {
+        http_response_code(400);
+        echo json_encode([
+            "success" => false,
+            "message" => "Enter valid user details and email"
+        ]);
+        return;
+    }
+
+    $success = insertUser(
+        $conn,
+        $id,
+        $username,
+        $firstname,
+        $email,
+        $name
+    );
+
+    if (!$success) {
+        http_response_code(400);
+        echo json_encode([
+            "success" => false,
+            "message" => "User insert failed. Check duplicate ID or database fields."
+        ]);
+        return;
+    }
+
+    http_response_code(201);
+    echo json_encode([
+        "success" => true,
+        "message" => "User inserted successfully",
+        "id" => $id
+    ]);
+}
+ 
 ?>
   

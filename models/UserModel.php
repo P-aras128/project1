@@ -144,3 +144,31 @@ function deleteUser($conn, $id) {
     return $success;
 }
    
+ 
+// Insert new user
+function insertUser($conn, $id, $username, $firstname, $email, $name) {
+    $sql = "INSERT INTO users (id, username, firstname, email, name)
+            VALUES (?, ?, ?, ?, ?)";
+
+    $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->bind_param(
+        "issss",
+        $id,
+        $username,
+        $firstname,
+        $email,
+        $name
+    );
+
+    $success = $stmt->execute();
+
+    $stmt->close();
+
+    return $success;
+}
+ 

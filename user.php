@@ -46,10 +46,28 @@
             box-sizing: border-box;
             padding: 7px;
         }
+
+        .insert-form {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 
 <body>
+
+    <h2>Insert New User</h2>
+
+    <div class="insert-form">
+        <input type="number" id="newId" placeholder="Enter User ID" min="1">
+        <input type="text" id="newUsername" placeholder="Username">
+        <input type="text" id="newFirstname" placeholder="First Name">
+        <input type="email" id="newEmail" placeholder="Email">
+        <input type="text" id="newName" placeholder="Name">
+
+        <button type="button" onclick="insertData()">Insert User</button>
+    </div>
+
+    <hr>
 
     <h2>Fetch User Data</h2>
 
@@ -81,6 +99,59 @@
     <script>
         let currentUserData = null;
         let currentDepartmentData = null;
+
+        // INSERT USER
+        async function insertData() {
+            const id = document.getElementById("newId").value.trim();
+            const username = document.getElementById("newUsername").value.trim();
+            const firstname = document.getElementById("newFirstname").value.trim();
+            const email = document.getElementById("newEmail").value.trim();
+            const name = document.getElementById("newName").value.trim();
+            const message = document.getElementById("message");
+
+            if (!id || Number(id) < 1 || !username || !firstname || !email || !name) {
+                message.textContent = "Please fill in all fields with a valid ID";
+                return;
+            }
+
+            try {
+                const response = await fetch("/project1/users", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        id: Number(id),
+                        username: username,
+                        firstname: firstname,
+                        email: email,
+                        name: name
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    message.textContent = result.message || "Insert failed";
+                    return;
+                }
+
+                message.textContent = result.message;
+
+                document.getElementById("newId").value = "";
+                document.getElementById("newUsername").value = "";
+                document.getElementById("newFirstname").value = "";
+                document.getElementById("newEmail").value = "";
+                document.getElementById("newName").value = "";
+
+                document.getElementById("userId").value = id;
+                await fetchData();
+
+            } catch (error) {
+                console.error(error);
+                message.textContent = "Insert failed. Server ya route check karo.";
+            }
+        }
 
         // FETCH USER
         async function fetchData() {
@@ -247,9 +318,7 @@
 
             const id = currentUserData.id;
 
-            if (!confirm(
-                "Kya tum waqai is user ko delete karna chahte ho?"
-            )) {
+            if (!confirm("Kya tum waqai is user ko delete karna chahte ho?")) {
                 return;
             }
 
@@ -272,7 +341,6 @@
                 }
 
                 message.textContent = result.message;
-
                 currentUserData = null;
                 currentDepartmentData = null;
 
