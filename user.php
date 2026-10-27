@@ -17,6 +17,10 @@
             margin: 5px;
         }
 
+        button {
+            cursor: pointer;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -59,6 +63,7 @@
     <button type="button" onclick="fetchData()">Fetch Data</button>
     <button type="button" onclick="clearData()">Clear Data</button>
     <button type="button" onclick="updateData()">Update Data</button>
+    <button type="button" onclick="deleteData()">Delete User</button>
 
     <p id="message"></p>
 
@@ -70,7 +75,6 @@
                 <th>Value</th>
             </tr>
         </thead>
-
         <tbody id="tableBody"></tbody>
     </table>
 
@@ -78,6 +82,7 @@
         let currentUserData = null;
         let currentDepartmentData = null;
 
+        // FETCH USER
         async function fetchData() {
             const id = document.getElementById("userId").value.trim();
             const tableBody = document.getElementById("tableBody");
@@ -99,7 +104,6 @@
                 );
 
                 const responseText = await response.text();
-
                 const jsonStart = responseText.indexOf('{"success"');
 
                 if (jsonStart === -1) {
@@ -176,67 +180,118 @@
                 }
 
             } catch (error) {
-                message.textContent = "Data fetch nahi ho saka. Route ya server response check karo.";
                 console.error(error);
+                message.textContent =
+                    "Data fetch nahi ho saka. Route ya server response check karo.";
             }
         }
 
-      
-async function updateData() {
-    if (!currentUserData) {
-        document.getElementById("message").textContent =
-            "Pehle Fetch Data button dabao";
-        return;
-    }
-
-    const updatedUser = { ...currentUserData };
-
-    document.querySelectorAll(".edit-input").forEach(input => {
-        updatedUser[input.dataset.field] = input.value.trim();
-    });
-
-    const message = document.getElementById("message");
-    const id = currentUserData.id;
-
-    try {
-        const response = await fetch(
-            `/project1/users/${encodeURIComponent(id)}`,
-            {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    username: updatedUser.username,
-                    firstname: updatedUser.firstname,
-                    email: updatedUser.email,
-                    name: updatedUser.name
-                })
+        // UPDATE USER
+        async function updateData() {
+            if (!currentUserData) {
+                document.getElementById("message").textContent =
+                    "Pehle Fetch Data button dabao";
+                return;
             }
-        );
 
-        const result = await response.json();
+            const updatedUser = { ...currentUserData };
 
-        if (!response.ok || !result.success) {
-            message.textContent = result.message || "Update failed";
-            return;
+            document.querySelectorAll(".edit-input").forEach(input => {
+                updatedUser[input.dataset.field] = input.value.trim();
+            });
+
+            const message = document.getElementById("message");
+            const id = currentUserData.id;
+
+            try {
+                const response = await fetch(
+                    `/project1/users/${encodeURIComponent(id)}`,
+                    {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            username: updatedUser.username,
+                            firstname: updatedUser.firstname,
+                            email: updatedUser.email,
+                            name: updatedUser.name
+                        })
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    message.textContent = result.message || "Update failed";
+                    return;
+                }
+
+                message.textContent = result.message;
+                await fetchData();
+
+            } catch (error) {
+                console.error(error);
+                message.textContent =
+                    "Update failed. Server aur route check karo.";
+            }
         }
 
-        message.textContent = result.message;
-        await fetchData();
+        // DELETE USER
+        async function deleteData() {
+            if (!currentUserData) {
+                document.getElementById("message").textContent =
+                    "Pehle Fetch Data button dabao";
+                return;
+            }
 
-    } catch (error) {
-        console.error(error);
-        message.textContent =
-            "Update failed. Server aur route check karo.";
-    }
-}
-   
+            const id = currentUserData.id;
 
+            if (!confirm(
+                "Kya tum waqai is user ko delete karna chahte ho?"
+            )) {
+                return;
+            }
+
+            const message = document.getElementById("message");
+
+            try {
+                const response = await fetch(
+                    `/project1/users/${encodeURIComponent(id)}`,
+                    {
+                        method: "DELETE"
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    message.textContent =
+                        result.message || "User delete nahi hua";
+                    return;
+                }
+
+                message.textContent = result.message;
+
+                currentUserData = null;
+                currentDepartmentData = null;
+
+                document.getElementById("userId").value = "";
+                document.getElementById("tableBody").innerHTML = "";
+
+            } catch (error) {
+                console.error(error);
+                message.textContent =
+                    "Delete failed. Server aur route check karo.";
+            }
+        }
+
+        // CLEAR DATA
         function clearData() {
             document.getElementById("userId").value = "";
             document.getElementById("tableBody").innerHTML = "";
             document.getElementById("message").textContent = "";
+
             currentUserData = null;
             currentDepartmentData = null;
         }
@@ -244,4 +299,4 @@ async function updateData() {
 
 </body>
 </html>
-   
+ 

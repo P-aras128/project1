@@ -124,3 +124,23 @@ function updateUser($conn, $id, $username, $firstname, $email, $name) {
     return $success;
 }
  
+ 
+// Delete existing user
+function deleteUser($conn, $id) {
+    $sql = "DELETE FROM users WHERE id = ?";
+
+    $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->bind_param("i", $id);
+
+    $success = $stmt->execute();
+
+    $stmt->close();
+
+    return $success;
+}
+   

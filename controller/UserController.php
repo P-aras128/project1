@@ -176,6 +176,44 @@ function updateUserController($conn, $id) {
         "message" => "User updated successfully"
     ]);
 } 
+function deleteUserController($conn, $id) {
+    header("Content-Type: application/json");
 
+    $existingUser = getUserById($conn, $id);
+
+    if ($existingUser === false) {
+        http_response_code(500);
+        echo json_encode([
+            "success" => false,
+            "message" => "Failed to check user"
+        ]);
+        return;
+    }
+
+    if (empty($existingUser)) {
+        http_response_code(404);
+        echo json_encode([
+            "success" => false,
+            "message" => "User not found"
+        ]);
+        return;
+    }
+
+    $success = deleteUser($conn, $id);
+
+    if (!$success) {
+        http_response_code(500);
+        echo json_encode([
+            "success" => false,
+            "message" => "Failed to delete user"
+        ]);
+        return;
+    }
+
+    echo json_encode([
+        "success" => true,
+        "message" => "User deleted successfully"
+    ]);
+}  
 ?>
   

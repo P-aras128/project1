@@ -30,6 +30,12 @@ if ($method === "PUT" && preg_match("#^/users/([0-9]+)/?$#", $path, $matches)) {
     return;
 } 
 
+    // DELETE /users/1 (Delete user)
+    if ($method === "DELETE" && preg_match("#^/users/([0-9]+)/?$#", $path, $matches)) {
+        deleteUserController($conn, (int) $matches[1]);
+        return;
+    }
+ 
     // Step 5: GET /users-with-departments
     if ($method === "GET" && preg_match("#^/users-with-departments/?$#", $path)) {
         getUsersWithDepartmentsController($conn);
