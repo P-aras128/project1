@@ -24,6 +24,11 @@ function handleUserRoutes($conn)
         getUser($conn, (int) $matches[1]);
         return;
     }
+    // Step 4.1: PUT /users/1 (Update user)
+if ($method === "PUT" && preg_match("#^/users/([0-9]+)/?$#", $path, $matches)) {
+    updateUserController($conn, (int) $matches[1]);
+    return;
+} 
 
     // Step 5: GET /users-with-departments
     if ($method === "GET" && preg_match("#^/users-with-departments/?$#", $path)) {

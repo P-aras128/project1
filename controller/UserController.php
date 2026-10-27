@@ -113,6 +113,69 @@ function getUsersWithAllDetailsController($conn) {
     ]);
 }
  
+function updateUserController($conn, $id) {
+    header("Content-Type: application/json");
+
+    // Get updated data from frontend
+    $input = json_decode(file_get_contents("php://input"), true);
+
+    if (
+        !is_array($input) ||
+        !isset($input["username"], $input["firstname"], $input["email"], $input["name"])
+    ) {
+        http_response_code(400);
+        echo json_encode([
+            "success" => false,
+            "message" => "All user fields are required"
+        ]);
+        return;
+    }
+
+    // Check whether user exists
+    $existingUser = getUserById($conn, $id);
+
+    if ($existingUser === false) {
+        http_response_code(500);
+        echo json_encode([
+            "success" => false,
+            "message" => "Failed to check user"
+        ]);
+        return;
+    }
+
+    if (empty($existingUser)) {
+        http_response_code(404);
+        echo json_encode([
+            "success" => false,
+            "message" => "User not found"
+        ]);
+        return;
+    }
+
+    // Update user in database
+    $success = updateUser(
+        $conn,
+        $id,
+        trim($input["username"]),
+        trim($input["firstname"]),
+        trim($input["email"]),
+        trim($input["name"])
+    );
+
+    if (!$success) {
+        http_response_code(500);
+        echo json_encode([
+            "success" => false,
+            "message" => "Failed to update user"
+        ]);
+        return;
+    }
+
+    echo json_encode([
+        "success" => true,
+        "message" => "User updated successfully"
+    ]);
+} 
 
 ?>
   

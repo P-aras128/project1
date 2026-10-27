@@ -38,7 +38,7 @@ function getUsersWithDepartments($conn) {
                    departments.department_name
             FROM users
             INNER JOIN departments
-            ON users.department_id = departments.id";
+                ON users.department_id = departments.id";
 
     $result = $conn->query($sql);
 
@@ -92,7 +92,35 @@ function getDepartByIDFromModel($department_id) {
 
     return $departments;
 }
- 
 
-?>
+// Update existing user
+function updateUser($conn, $id, $username, $firstname, $email, $name) {
+    $sql = "UPDATE users
+            SET username = ?,
+                firstname = ?,
+                email = ?,
+                name = ?
+            WHERE id = ?";
+
+    $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->bind_param(
+        "ssssi",
+        $username,
+        $firstname,
+        $email,
+        $name,
+        $id
+    );
+
+    $success = $stmt->execute();
+
+    $stmt->close();
+
+    return $success;
+}
  
