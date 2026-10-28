@@ -216,15 +216,17 @@ function deleteUserController($conn, $id) {
     ]);
 }  
 
-function insertUserController($conn) {
+
+function insertUserController($conn)
+{
     header("Content-Type: application/json");
 
     $input = json_decode(file_get_contents("php://input"), true);
 
+    // ID frontend se nahi leni; database khud generate karega.
     if (
         !is_array($input) ||
         !isset(
-            $input["id"],
             $input["username"],
             $input["firstname"],
             $input["email"],
@@ -239,17 +241,14 @@ function insertUserController($conn) {
         return;
     }
 
-    $id = filter_var($input["id"], FILTER_VALIDATE_INT);
     $username = trim($input["username"]);
     $firstname = trim($input["firstname"]);
     $email = trim($input["email"]);
     $name = trim($input["name"]);
 
     if (
-        $id === false || $id < 1 ||
         $username === "" ||
         $firstname === "" ||
-        $email === "" ||
         $name === "" ||
         !filter_var($email, FILTER_VALIDATE_EMAIL)
     ) {
@@ -261,20 +260,20 @@ function insertUserController($conn) {
         return;
     }
 
-    $success = insertUser(
+    // Model function ID khud generate karne dega.
+    $id = insertUser(
         $conn,
-        $id,
         $username,
         $firstname,
         $email,
         $name
     );
 
-    if (!$success) {
-        http_response_code(400);
+    if ($id === false) {
+        http_response_code(500);
         echo json_encode([
             "success" => false,
-            "message" => "User insert failed. Check duplicate ID or database fields."
+            "message" => "User insert failed. Check UserModel.php."
         ]);
         return;
     }
@@ -286,6 +285,6 @@ function insertUserController($conn) {
         "id" => $id
     ]);
 }
- 
+   
 ?>
   

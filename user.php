@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Data</title>
+    <title>User CRUD</title>
 
     <style>
         body {
@@ -34,7 +34,7 @@
         }
 
         th {
-            background-color: #ddd;
+            background: #ddd;
         }
 
         #message {
@@ -46,10 +46,6 @@
             box-sizing: border-box;
             padding: 7px;
         }
-
-        .insert-form {
-            margin-bottom: 20px;
-        }
     </style>
 </head>
 
@@ -57,8 +53,7 @@
 
     <h2>Insert New User</h2>
 
-    <div class="insert-form">
-        <input type="number" id="newId" placeholder="Enter User ID" min="1">
+    <div>
         <input type="text" id="newUsername" placeholder="Username">
         <input type="text" id="newFirstname" placeholder="First Name">
         <input type="email" id="newEmail" placeholder="Email">
@@ -69,14 +64,9 @@
 
     <hr>
 
-    <h2>Fetch User Data</h2>
+    <h2>Fetch / Update / Delete User</h2>
 
-    <input
-        type="number"
-        id="userId"
-        placeholder="Enter User ID"
-        min="1"
-    >
+    <input type="number" id="userId" placeholder="Enter User ID" min="1">
 
     <button type="button" onclick="fetchData()">Fetch Data</button>
     <button type="button" onclick="clearData()">Clear Data</button>
@@ -84,6 +74,23 @@
     <button type="button" onclick="deleteData()">Delete User</button>
 
     <p id="message"></p>
+
+    <h2>All Users</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>First Name</th>
+                <th>Email</th>
+                <th>Name</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <h2>Selected User Details</h2>
 
     <table>
         <thead>
@@ -93,24 +100,22 @@
                 <th>Value</th>
             </tr>
         </thead>
-        <tbody id="tableBody"></tbody>
+        <tbody id="detailsBody"></tbody>
     </table>
 
     <script>
         let currentUserData = null;
-        let currentDepartmentData = null;
 
-        // INSERT USER
+        // INSERT USER: ID database khud generate karega.
         async function insertData() {
-            const id = document.getElementById("newId").value.trim();
             const username = document.getElementById("newUsername").value.trim();
             const firstname = document.getElementById("newFirstname").value.trim();
             const email = document.getElementById("newEmail").value.trim();
             const name = document.getElementById("newName").value.trim();
             const message = document.getElementById("message");
 
-            if (!id || Number(id) < 1 || !username || !firstname || !email || !name) {
-                message.textContent = "Please fill in all fields with a valid ID";
+            if (!username || !firstname || !email || !name) {
+                message.textContent = "Please fill in all fields.";
                 return;
             }
 
@@ -121,147 +126,175 @@
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        id: Number(id),
-                        username: username,
-                        firstname: firstname,
-                        email: email,
-                        name: name
+                        username,
+                        firstname,
+                        email,
+                        name
                     })
                 });
 
                 const result = await response.json();
 
                 if (!response.ok || !result.success) {
-                    message.textContent = result.message || "Insert failed";
+                    message.textContent = result.message || "Insert failed.";
                     return;
                 }
 
-                message.textContent = result.message;
-
-                document.getElementById("newId").value = "";
                 document.getElementById("newUsername").value = "";
                 document.getElementById("newFirstname").value = "";
                 document.getElementById("newEmail").value = "";
                 document.getElementById("newName").value = "";
 
-                document.getElementById("userId").value = id;
+                document.getElementById("userId").value = result.id;
+
+                message.textContent =
+                    "User inserted successfully. New ID: " + result.id;
+
+                // List ko foran refresh karo, page reload nahi hoga.
+                await loadAllUsers();
+
+                // Naye user ki editable details bhi dikhao.
                 await fetchData();
 
             } catch (error) {
                 console.error(error);
-                message.textContent = "Insert failed. Server ya route check karo.";
+                message.textContent =
+                    "Insert failed. PHP controller aur route check karo.";
             }
         }
 
-        // FETCH USER
-        async function fetchData() {
-            const id = document.getElementById("userId").value.trim();
+        // LOAD ALL USERS
+        async function loadAllUsers() {
             const tableBody = document.getElementById("tableBody");
             const message = document.getElementById("message");
 
-            tableBody.innerHTML = "";
-            message.textContent = "";
-            currentUserData = null;
-            currentDepartmentData = null;
-
-            if (!id || Number(id) < 1) {
-                message.textContent = "Please enter a valid User ID";
-                return;
-            }
-
             try {
-                const response = await fetch(
-                    `/project1/users/${encodeURIComponent(id)}`
-                );
-
-                const responseText = await response.text();
-                const jsonStart = responseText.indexOf('{"success"');
-
-                if (jsonStart === -1) {
-                    throw new Error("JSON response not found");
-                }
-
-                const result = JSON.parse(responseText.substring(jsonStart));
+                const response = await fetch("/project1/users");
+                const result = await response.json();
 
                 if (!response.ok || !result.success) {
-                    message.textContent = result.message || "User not found";
+                    message.textContent =
+                        result.message || "Could not load users.";
                     return;
                 }
 
-                const data = result.data;
+                const users = Array.isArray(result.data)
+                    ? result.data
+                    : [];
 
-                function addRows(type, object) {
-                    if (!object || typeof object !== "object") {
-                        return;
-                    }
+                tableBody.innerHTML = "";
 
-                    Object.entries(object).forEach(([key, value]) => {
-                        const row = document.createElement("tr");
+                users.forEach(user => {
+                    const row = document.createElement("tr");
 
-                        const typeCell = document.createElement("td");
-                        typeCell.textContent = type;
-
-                        const fieldCell = document.createElement("td");
-                        fieldCell.textContent = key;
-
-                        const valueCell = document.createElement("td");
-
-                        if (type === "User" && key !== "id") {
-                            const input = document.createElement("input");
-                            input.type = "text";
-                            input.className = "edit-input";
-                            input.value = value ?? "";
-                            input.dataset.field = key;
-                            valueCell.appendChild(input);
-                        } else {
-                            valueCell.textContent =
-                                value === null ? "" :
-                                typeof value === "object" ?
-                                JSON.stringify(value) : String(value);
-                        }
-
-                        row.appendChild(typeCell);
-                        row.appendChild(fieldCell);
-                        row.appendChild(valueCell);
-
-                        tableBody.appendChild(row);
-                    });
-                }
-
-                if (data.user) {
-                    currentUserData = data.user;
-                    currentDepartmentData = data.department;
-
-                    addRows("User", data.user);
-
-                    if (Array.isArray(data.department)) {
-                        data.department.forEach(department => {
-                            addRows("Department", department);
+                    ["id", "username", "firstname", "email", "name"]
+                        .forEach(key => {
+                            const cell = document.createElement("td");
+                            cell.textContent = user[key] ?? "";
+                            row.appendChild(cell);
                         });
-                    } else {
-                        addRows("Department", data.department);
-                    }
-                } else {
-                    currentUserData = data;
-                    addRows("User", data);
-                }
 
-                if (tableBody.children.length === 0) {
-                    message.textContent = "No data found";
+                    tableBody.appendChild(row);
+                });
+
+                if (users.length === 0) {
+                    tableBody.innerHTML =
+                        '<tr><td colspan="5">No users found.</td></tr>';
                 }
 
             } catch (error) {
                 console.error(error);
                 message.textContent =
-                    "Data fetch nahi ho saka. Route ya server response check karo.";
+                    "User list load nahi hui. GET /users route check karo.";
+            }
+        }
+
+        // FETCH ONE USER
+        async function fetchData() {
+            const id = document.getElementById("userId").value.trim();
+            const detailsBody = document.getElementById("detailsBody");
+            const message = document.getElementById("message");
+
+            detailsBody.innerHTML = "";
+            currentUserData = null;
+
+            if (!id || Number(id) < 1) {
+                message.textContent = "Please enter a valid User ID.";
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    "/project1/users/" + encodeURIComponent(id)
+                );
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    message.textContent = result.message || "User not found.";
+                    return;
+                }
+
+                const data = result.data;
+                const user = data.user || data;
+
+                currentUserData = user;
+
+                function addRows(type, object, editable = false) {
+                    if (!object || typeof object !== "object") return;
+
+                    Object.entries(object).forEach(([key, value]) => {
+                        const row = document.createElement("tr");
+                        const typeCell = document.createElement("td");
+                        const fieldCell = document.createElement("td");
+                        const valueCell = document.createElement("td");
+
+                        typeCell.textContent = type;
+                        fieldCell.textContent = key;
+
+                        if (editable && key !== "id") {
+                            const input = document.createElement("input");
+                            input.type = "text";
+                            input.className = "edit-input";
+                            input.dataset.field = key;
+                            input.value = value ?? "";
+                            valueCell.appendChild(input);
+                        } else {
+                            valueCell.textContent = value ?? "";
+                        }
+
+                        row.append(typeCell, fieldCell, valueCell);
+                        detailsBody.appendChild(row);
+                    });
+                }
+
+                addRows("User", user, true);
+
+                if (data.department) {
+                    if (Array.isArray(data.department)) {
+                        data.department.forEach(department =>
+                            addRows("Department", department)
+                        );
+                    } else {
+                        addRows("Department", data.department);
+                    }
+                }
+
+                message.textContent = "User data loaded.";
+
+            } catch (error) {
+                console.error(error);
+                message.textContent =
+                    "Fetch failed. GET /users/:id route check karo.";
             }
         }
 
         // UPDATE USER
         async function updateData() {
+            const message = document.getElementById("message");
+
             if (!currentUserData) {
-                document.getElementById("message").textContent =
-                    "Pehle Fetch Data button dabao";
+                message.textContent = "Pehle Fetch Data karo.";
                 return;
             }
 
@@ -271,12 +304,10 @@
                 updatedUser[input.dataset.field] = input.value.trim();
             });
 
-            const message = document.getElementById("message");
-            const id = currentUserData.id;
-
             try {
                 const response = await fetch(
-                    `/project1/users/${encodeURIComponent(id)}`,
+                    "/project1/users/" +
+                    encodeURIComponent(currentUserData.id),
                     {
                         method: "PUT",
                         headers: {
@@ -294,77 +325,72 @@
                 const result = await response.json();
 
                 if (!response.ok || !result.success) {
-                    message.textContent = result.message || "Update failed";
+                    message.textContent = result.message || "Update failed.";
                     return;
                 }
 
-                message.textContent = result.message;
+                message.textContent = result.message || "User updated.";
+                await loadAllUsers();
                 await fetchData();
 
             } catch (error) {
                 console.error(error);
-                message.textContent =
-                    "Update failed. Server aur route check karo.";
+                message.textContent = "Update failed. Server check karo.";
             }
         }
 
         // DELETE USER
         async function deleteData() {
+            const message = document.getElementById("message");
+
             if (!currentUserData) {
-                document.getElementById("message").textContent =
-                    "Pehle Fetch Data button dabao";
+                message.textContent = "Pehle Fetch Data karo.";
                 return;
             }
 
             const id = currentUserData.id;
 
-            if (!confirm("Kya tum waqai is user ko delete karna chahte ho?")) {
+            if (!confirm("Kya tum is user ko delete karna chahti ho?")) {
                 return;
             }
 
-            const message = document.getElementById("message");
-
             try {
                 const response = await fetch(
-                    `/project1/users/${encodeURIComponent(id)}`,
-                    {
-                        method: "DELETE"
-                    }
+                    "/project1/users/" + encodeURIComponent(id),
+                    { method: "DELETE" }
                 );
 
                 const result = await response.json();
 
                 if (!response.ok || !result.success) {
-                    message.textContent =
-                        result.message || "User delete nahi hua";
+                    message.textContent = result.message || "Delete failed.";
                     return;
                 }
 
-                message.textContent = result.message;
                 currentUserData = null;
-                currentDepartmentData = null;
-
                 document.getElementById("userId").value = "";
-                document.getElementById("tableBody").innerHTML = "";
+                document.getElementById("detailsBody").innerHTML = "";
+
+                message.textContent = result.message || "User deleted.";
+                await loadAllUsers();
 
             } catch (error) {
                 console.error(error);
-                message.textContent =
-                    "Delete failed. Server aur route check karo.";
+                message.textContent = "Delete failed. Server check karo.";
             }
         }
 
-        // CLEAR DATA
+        // CLEAR SELECTED USER
         function clearData() {
             document.getElementById("userId").value = "";
-            document.getElementById("tableBody").innerHTML = "";
+            document.getElementById("detailsBody").innerHTML = "";
             document.getElementById("message").textContent = "";
-
             currentUserData = null;
-            currentDepartmentData = null;
         }
+
+        // Page khulte hi all users show karo.
+        document.addEventListener("DOMContentLoaded", loadAllUsers);
     </script>
 
 </body>
 </html>
- 

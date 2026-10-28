@@ -143,32 +143,40 @@ function deleteUser($conn, $id) {
 
     return $success;
 }
-   
+
  
-// Insert new user
-function insertUser($conn, $id, $username, $firstname, $email, $name) {
-    $sql = "INSERT INTO users (id, username, firstname, email, name)
-            VALUES (?, ?, ?, ?, ?)";
+// Insert new user; database automatically generates ID
+function insertUser($conn, $username, $firstname, $email, $name)
+{
+    $sql = "INSERT INTO users (username, firstname, email, name)
+            VALUES (?, ?, ?, ?)";
 
     $stmt = $conn->prepare($sql);
 
     if (!$stmt) {
+        error_log("Insert prepare failed: " . $conn->error);
         return false;
     }
 
     $stmt->bind_param(
-        "issss",
-        $id,
+        "ssss",
         $username,
         $firstname,
         $email,
         $name
     );
 
-    $success = $stmt->execute();
+    if ($stmt->execute()) {
+        $newId = $conn->insert_id;
+        $stmt->close();
+        return $newId;
+    }
 
+    error_log("Insert execute failed: " . $stmt->error);
     $stmt->close();
 
-    return $success;
+    return false;
 }
+ 
+   
  
