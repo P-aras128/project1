@@ -2,7 +2,6 @@
 <?php
 
 require_once __DIR__ . "/../controller/UserController.php";
-require_once __DIR__ . "/../models/UserModel.php";
 
 function handleUserRoutes($conn)
 {
@@ -18,7 +17,7 @@ function handleUserRoutes($conn)
         return;
     }
 
-    // POST: Insert user
+    // INSERT user
     if ($method === "POST" && preg_match("#^/users/?$#", $path)) {
         insertUserController($conn);
         return;
@@ -30,13 +29,16 @@ function handleUserRoutes($conn)
         return;
     }
 
-    // PUT: Update user
-    if ($method === "PUT" && preg_match("#^/users/([0-9]+)/?$#", $path, $matches)) {
+    // UPDATE user
+    if (
+        in_array($method, ["POST", "PUT"], true) &&
+        preg_match("#^/users/([0-9]+)/?$#", $path, $matches)
+    ) {
         updateUserController($conn, (int) $matches[1]);
         return;
     }
 
-    // DELETE: Delete user
+    // DELETE user
     if ($method === "DELETE" && preg_match("#^/users/([0-9]+)/?$#", $path, $matches)) {
         deleteUserController($conn, (int) $matches[1]);
         return;
@@ -48,7 +50,7 @@ function handleUserRoutes($conn)
         return;
     }
 
-    // GET all details
+    // GET users with all details
     if ($method === "GET" && preg_match("#^/all-details/?$#", $path)) {
         getUsersWithAllDetailsController($conn);
         return;
